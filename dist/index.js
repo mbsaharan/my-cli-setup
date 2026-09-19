@@ -23276,7 +23276,7 @@ async function run() {
     const version = getInput("version");
     let toolPath = find("my-cli", version);
     if (!toolPath) {
-      const url = `https://example.com/my-cli/${version}/my-cli-linux.tar.gz`;
+      const url = `https://github.com/cli/cli/releases/download/v${version}/gh_${version}_linux_amd64.tar.gz`;
       const downloadPath = await downloadTool(url);
       const extractedPath = await extractTar(downloadPath);
       toolPath = await cacheDir(extractedPath, "my-cli", version);
