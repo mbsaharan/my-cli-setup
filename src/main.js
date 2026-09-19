@@ -3,6 +3,20 @@ import * as tc from '@actions/tool-cache';
 import * as fs from 'fs';
 import * as path from 'path';
 
+function findGh(dir) {
+  for (const entry of fs.readdirSync(dir)) {
+    const full = path.join(dir, entry);
+    const stat = fs.statSync(full);
+    if (stat.isDirectory()) {
+      const found = findGh(full);
+      if (found) return found;
+    } else if (entry === 'gh') {
+      return full;
+    }
+  }
+  return null;
+}
+
 async function run() {
   try {
     const version = core.getInput('version');
@@ -11,11 +25,11 @@ async function run() {
     const tarball = await tc.downloadTool(url);
     const extracted = await tc.extractTar(tarball);
     
-    // tarball contains folder gh_2.50.0_linux_amd64/
-    const binDir = path.join(extracted, `gh_${version}_linux_amd64`);
+    const ghPath = findGh(extracted);
+    if (!ghPath) throw new Error('gh binary not found');
     
-    // make my-cli command work
-    fs.copyFileSync(path.join(binDir, 'gh'), path.join(binDir, 'my-cli'));
+    const binDir = path.dirname(ghPath);
+    fs.copyFileSync(ghPath, path.join(binDir, 'my-cli'));
 
     core.addPath(binDir);
   } catch (error) {

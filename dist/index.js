@@ -23077,14 +23077,29 @@ function _getGlobal(key, defaultValue) {
 // src/main.js
 var fs4 = __toESM(require("fs"));
 var path6 = __toESM(require("path"));
+function findGh(dir) {
+  for (const entry of fs4.readdirSync(dir)) {
+    const full = path6.join(dir, entry);
+    const stat2 = fs4.statSync(full);
+    if (stat2.isDirectory()) {
+      const found = findGh(full);
+      if (found) return found;
+    } else if (entry === "gh") {
+      return full;
+    }
+  }
+  return null;
+}
 async function run() {
   try {
     const version = getInput("version");
     const url = `https://github.com/cli/cli/releases/download/v${version}/gh_${version}_linux_amd64.tar.gz`;
     const tarball = await downloadTool(url);
     const extracted = await extractTar(tarball);
-    const binDir = path6.join(extracted, `gh_${version}_linux_amd64`);
-    fs4.copyFileSync(path6.join(binDir, "gh"), path6.join(binDir, "my-cli"));
+    const ghPath = findGh(extracted);
+    if (!ghPath) throw new Error("gh binary not found");
+    const binDir = path6.dirname(ghPath);
+    fs4.copyFileSync(ghPath, path6.join(binDir, "my-cli"));
     addPath(binDir);
   } catch (error2) {
     setFailed(error2.message);
