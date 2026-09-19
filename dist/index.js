@@ -22081,6 +22081,15 @@ var __awaiter3 = function(thisArg, _arguments, P, generator) {
 };
 var { chmod, copyFile, lstat, mkdir, open, readdir, rename, rm, rmdir, stat, symlink, unlink } = fs2.promises;
 var IS_WINDOWS = process.platform === "win32";
+function readlink(fsPath) {
+  return __awaiter3(this, void 0, void 0, function* () {
+    const result = yield fs2.promises.readlink(fsPath);
+    if (IS_WINDOWS && !result.endsWith("\\")) {
+      return `${result}\\`;
+    }
+    return result;
+  });
+}
 var READONLY = fs2.constants.O_RDONLY;
 function exists(fsPath) {
   return __awaiter3(this, void 0, void 0, function* () {
@@ -22203,6 +22212,32 @@ var __awaiter4 = function(thisArg, _arguments, P, generator) {
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
 };
+function cp(source_1, dest_1) {
+  return __awaiter4(this, arguments, void 0, function* (source, dest, options = {}) {
+    const { force, recursive, copySourceDirectory } = readCopyOptions(options);
+    const destStat = (yield exists(dest)) ? yield stat(dest) : null;
+    if (destStat && destStat.isFile() && !force) {
+      return;
+    }
+    const newDest = destStat && destStat.isDirectory() && copySourceDirectory ? path2.join(dest, path2.basename(source)) : dest;
+    if (!(yield exists(source))) {
+      throw new Error(`no such file or directory: ${source}`);
+    }
+    const sourceStat = yield stat(source);
+    if (sourceStat.isDirectory()) {
+      if (!recursive) {
+        throw new Error(`Failed to copy. ${source} is a directory, but tried to copy without recursive flag.`);
+      } else {
+        yield cpDirRecursive(source, newDest, 0, force);
+      }
+    } else {
+      if (path2.relative(source, newDest) === "") {
+        throw new Error(`'${newDest}' and '${source}' are the same file`);
+      }
+      yield copyFile2(source, newDest, force);
+    }
+  });
+}
 function rmRF(inputPath) {
   return __awaiter4(this, void 0, void 0, function* () {
     if (IS_WINDOWS) {
@@ -22290,6 +22325,51 @@ function findInPath(tool) {
       }
     }
     return matches;
+  });
+}
+function readCopyOptions(options) {
+  const force = options.force == null ? true : options.force;
+  const recursive = Boolean(options.recursive);
+  const copySourceDirectory = options.copySourceDirectory == null ? true : Boolean(options.copySourceDirectory);
+  return { force, recursive, copySourceDirectory };
+}
+function cpDirRecursive(sourceDir, destDir, currentDepth, force) {
+  return __awaiter4(this, void 0, void 0, function* () {
+    if (currentDepth >= 255)
+      return;
+    currentDepth++;
+    yield mkdirP(destDir);
+    const files = yield readdir(sourceDir);
+    for (const fileName of files) {
+      const srcFile = `${sourceDir}/${fileName}`;
+      const destFile = `${destDir}/${fileName}`;
+      const srcFileStat = yield lstat(srcFile);
+      if (srcFileStat.isDirectory()) {
+        yield cpDirRecursive(srcFile, destFile, currentDepth, force);
+      } else {
+        yield copyFile2(srcFile, destFile, force);
+      }
+    }
+    yield chmod(destDir, (yield stat(sourceDir)).mode);
+  });
+}
+function copyFile2(srcFile, destFile, force) {
+  return __awaiter4(this, void 0, void 0, function* () {
+    if ((yield lstat(srcFile)).isSymbolicLink()) {
+      try {
+        yield lstat(destFile);
+        yield unlink(destFile);
+      } catch (e) {
+        if (e.code === "EPERM") {
+          yield chmod(destFile, "0666");
+          yield unlink(destFile);
+        }
+      }
+      const symlinkFull = yield readlink(srcFile);
+      yield symlink(symlinkFull, destFile, IS_WINDOWS ? "junction" : null);
+    } else if (!(yield exists(destFile)) || force) {
+      yield copyFile(srcFile, destFile);
+    }
   });
 }
 
@@ -22834,6 +22914,7 @@ var fs3 = __toESM(require("fs"), 1);
 var semver = __toESM(require_semver2(), 1);
 
 // node_modules/@actions/tool-cache/lib/tool-cache.js
+var os6 = __toESM(require("os"), 1);
 var path5 = __toESM(require("path"), 1);
 var semver2 = __toESM(require_semver2(), 1);
 var stream = __toESM(require("stream"), 1);
@@ -23055,6 +23136,68 @@ function extractTar(file_1, dest_1) {
     return dest;
   });
 }
+function cacheDir(sourceDir, tool, version, arch3) {
+  return __awaiter8(this, void 0, void 0, function* () {
+    version = semver2.clean(version) || version;
+    arch3 = arch3 || os6.arch();
+    debug(`Caching tool ${tool} ${version} ${arch3}`);
+    debug(`source dir: ${sourceDir}`);
+    if (!fs3.statSync(sourceDir).isDirectory()) {
+      throw new Error("sourceDir is not a directory");
+    }
+    const destPath = yield _createToolPath(tool, version, arch3);
+    for (const itemName of fs3.readdirSync(sourceDir)) {
+      const s = path5.join(sourceDir, itemName);
+      yield cp(s, destPath, { recursive: true });
+    }
+    _completeToolPath(tool, version, arch3);
+    return destPath;
+  });
+}
+function find(toolName, versionSpec, arch3) {
+  if (!toolName) {
+    throw new Error("toolName parameter is required");
+  }
+  if (!versionSpec) {
+    throw new Error("versionSpec parameter is required");
+  }
+  arch3 = arch3 || os6.arch();
+  if (!isExplicitVersion(versionSpec)) {
+    const localVersions = findAllVersions(toolName, arch3);
+    const match = evaluateVersions(localVersions, versionSpec);
+    versionSpec = match;
+  }
+  let toolPath = "";
+  if (versionSpec) {
+    versionSpec = semver2.clean(versionSpec) || "";
+    const cachePath = path5.join(_getCacheDirectory(), toolName, versionSpec, arch3);
+    debug(`checking cache: ${cachePath}`);
+    if (fs3.existsSync(cachePath) && fs3.existsSync(`${cachePath}.complete`)) {
+      debug(`Found tool in cache ${toolName} ${versionSpec} ${arch3}`);
+      toolPath = cachePath;
+    } else {
+      debug("not found");
+    }
+  }
+  return toolPath;
+}
+function findAllVersions(toolName, arch3) {
+  const versions = [];
+  arch3 = arch3 || os6.arch();
+  const toolPath = path5.join(_getCacheDirectory(), toolName);
+  if (fs3.existsSync(toolPath)) {
+    const children = fs3.readdirSync(toolPath);
+    for (const child2 of children) {
+      if (isExplicitVersion(child2)) {
+        const fullPath = path5.join(toolPath, child2, arch3 || "");
+        if (fs3.existsSync(fullPath) && fs3.existsSync(`${fullPath}.complete`)) {
+          versions.push(child2);
+        }
+      }
+    }
+  }
+  return versions;
+}
 function _createExtractFolder(dest) {
   return __awaiter8(this, void 0, void 0, function* () {
     if (!dest) {
@@ -23063,6 +23206,59 @@ function _createExtractFolder(dest) {
     yield mkdirP(dest);
     return dest;
   });
+}
+function _createToolPath(tool, version, arch3) {
+  return __awaiter8(this, void 0, void 0, function* () {
+    const folderPath = path5.join(_getCacheDirectory(), tool, semver2.clean(version) || version, arch3 || "");
+    debug(`destination ${folderPath}`);
+    const markerPath = `${folderPath}.complete`;
+    yield rmRF(folderPath);
+    yield rmRF(markerPath);
+    yield mkdirP(folderPath);
+    return folderPath;
+  });
+}
+function _completeToolPath(tool, version, arch3) {
+  const folderPath = path5.join(_getCacheDirectory(), tool, semver2.clean(version) || version, arch3 || "");
+  const markerPath = `${folderPath}.complete`;
+  fs3.writeFileSync(markerPath, "");
+  debug("finished caching tool");
+}
+function isExplicitVersion(versionSpec) {
+  const c = semver2.clean(versionSpec) || "";
+  debug(`isExplicit: ${c}`);
+  const valid2 = semver2.valid(c) != null;
+  debug(`explicit? ${valid2}`);
+  return valid2;
+}
+function evaluateVersions(versions, versionSpec) {
+  let version = "";
+  debug(`evaluating ${versions.length} versions`);
+  versions = versions.sort((a, b) => {
+    if (semver2.gt(a, b)) {
+      return 1;
+    }
+    return -1;
+  });
+  for (let i = versions.length - 1; i >= 0; i--) {
+    const potential = versions[i];
+    const satisfied = semver2.satisfies(potential, versionSpec);
+    if (satisfied) {
+      version = potential;
+      break;
+    }
+  }
+  if (version) {
+    debug(`matched: ${version}`);
+  } else {
+    debug("match not found");
+  }
+  return version;
+}
+function _getCacheDirectory() {
+  const cacheDirectory = process.env["RUNNER_TOOL_CACHE"] || "";
+  (0, import_assert2.ok)(cacheDirectory, "Expected RUNNER_TOOL_CACHE to be defined");
+  return cacheDirectory;
 }
 function _getTempDirectory() {
   const tempDirectory = process.env["RUNNER_TEMP"] || "";
@@ -23080,17 +23276,21 @@ var path6 = __toESM(require("path"));
 async function run() {
   try {
     const version = getInput("version");
-    const url = `https://github.com/cli/cli/releases/download/v${version}/gh_${version}_linux_amd64.tar.gz`;
-    const tarball = await downloadTool(url);
-    const extracted = await extractTar(tarball);
-    const base = path6.join(extracted, `gh_${version}_linux_amd64`);
-    let ghPath = path6.join(base, "bin", "gh");
-    if (!fs4.existsSync(ghPath)) ghPath = path6.join(base, "gh");
-    const binDir = path6.dirname(ghPath);
-    fs4.copyFileSync(ghPath, path6.join(binDir, "my-cli"));
-    addPath(binDir);
-  } catch (error2) {
-    setFailed(error2.message);
+    let toolPath = find("my-cli", version);
+    if (!toolPath) {
+      const url = `https://github.com/cli/cli/releases/download/v${version}/gh_${version}_linux_amd64.tar.gz`;
+      const tarball = await downloadTool(url);
+      const extracted = await extractTar(tarball);
+      const base = path6.join(extracted, `gh_${version}_linux_amd64`);
+      let ghPath = path6.join(base, "bin", "gh");
+      if (!fs4.existsSync(ghPath)) ghPath = path6.join(base, "gh");
+      const binDir = path6.dirname(ghPath);
+      fs4.copyFileSync(ghPath, path6.join(binDir, "my-cli"));
+      toolPath = await cacheDir(binDir, "my-cli", version);
+    }
+    addPath(toolPath);
+  } catch (e) {
+    setFailed(e.message);
   }
 }
 run();
