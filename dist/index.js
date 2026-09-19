@@ -1067,14 +1067,14 @@ var require_util = __commonJS({
         }
         const port = url.port != null ? url.port : url.protocol === "https:" ? 443 : 80;
         let origin = url.origin != null ? url.origin : `${url.protocol || ""}//${url.hostname || ""}:${port}`;
-        let path6 = url.path != null ? url.path : `${url.pathname || ""}${url.search || ""}`;
+        let path7 = url.path != null ? url.path : `${url.pathname || ""}${url.search || ""}`;
         if (origin[origin.length - 1] === "/") {
           origin = origin.slice(0, origin.length - 1);
         }
-        if (path6 && path6[0] !== "/") {
-          path6 = `/${path6}`;
+        if (path7 && path7[0] !== "/") {
+          path7 = `/${path7}`;
         }
-        return new URL(`${origin}${path6}`);
+        return new URL(`${origin}${path7}`);
       }
       if (!isHttpOrHttpsPrefixed(url.origin || url.protocol)) {
         throw new InvalidArgumentError("Invalid URL protocol: the URL must start with `http:` or `https:`.");
@@ -1525,39 +1525,39 @@ var require_diagnostics = __commonJS({
       });
       diagnosticsChannel.channel("undici:client:sendHeaders").subscribe((evt) => {
         const {
-          request: { method, path: path6, origin }
+          request: { method, path: path7, origin }
         } = evt;
-        debuglog("sending request to %s %s/%s", method, origin, path6);
+        debuglog("sending request to %s %s/%s", method, origin, path7);
       });
       diagnosticsChannel.channel("undici:request:headers").subscribe((evt) => {
         const {
-          request: { method, path: path6, origin },
+          request: { method, path: path7, origin },
           response: { statusCode }
         } = evt;
         debuglog(
           "received response to %s %s/%s - HTTP %d",
           method,
           origin,
-          path6,
+          path7,
           statusCode
         );
       });
       diagnosticsChannel.channel("undici:request:trailers").subscribe((evt) => {
         const {
-          request: { method, path: path6, origin }
+          request: { method, path: path7, origin }
         } = evt;
-        debuglog("trailers received from %s %s/%s", method, origin, path6);
+        debuglog("trailers received from %s %s/%s", method, origin, path7);
       });
       diagnosticsChannel.channel("undici:request:error").subscribe((evt) => {
         const {
-          request: { method, path: path6, origin },
+          request: { method, path: path7, origin },
           error: error2
         } = evt;
         debuglog(
           "request to %s %s/%s errored - %s",
           method,
           origin,
-          path6,
+          path7,
           error2.message
         );
       });
@@ -1606,9 +1606,9 @@ var require_diagnostics = __commonJS({
         });
         diagnosticsChannel.channel("undici:client:sendHeaders").subscribe((evt) => {
           const {
-            request: { method, path: path6, origin }
+            request: { method, path: path7, origin }
           } = evt;
-          debuglog("sending request to %s %s/%s", method, origin, path6);
+          debuglog("sending request to %s %s/%s", method, origin, path7);
         });
       }
       diagnosticsChannel.channel("undici:websocket:open").subscribe((evt) => {
@@ -1671,7 +1671,7 @@ var require_request = __commonJS({
     var kHandler = /* @__PURE__ */ Symbol("handler");
     var Request = class {
       constructor(origin, {
-        path: path6,
+        path: path7,
         method,
         body,
         headers,
@@ -1686,11 +1686,11 @@ var require_request = __commonJS({
         expectContinue,
         servername
       }, handler) {
-        if (typeof path6 !== "string") {
+        if (typeof path7 !== "string") {
           throw new InvalidArgumentError("path must be a string");
-        } else if (path6[0] !== "/" && !(path6.startsWith("http://") || path6.startsWith("https://")) && method !== "CONNECT") {
+        } else if (path7[0] !== "/" && !(path7.startsWith("http://") || path7.startsWith("https://")) && method !== "CONNECT") {
           throw new InvalidArgumentError("path must be an absolute URL or start with a slash");
-        } else if (invalidPathRegex.test(path6)) {
+        } else if (invalidPathRegex.test(path7)) {
           throw new InvalidArgumentError("invalid request path");
         }
         if (typeof method !== "string") {
@@ -1756,7 +1756,7 @@ var require_request = __commonJS({
         this.completed = false;
         this.aborted = false;
         this.upgrade = upgrade || null;
-        this.path = query ? buildURL(path6, query) : path6;
+        this.path = query ? buildURL(path7, query) : path7;
         this.origin = origin;
         this.idempotent = idempotent == null ? method === "HEAD" || method === "GET" : idempotent;
         this.blocking = blocking == null ? false : blocking;
@@ -6385,7 +6385,7 @@ var require_client_h1 = __commonJS({
       return method !== "GET" && method !== "HEAD" && method !== "OPTIONS" && method !== "TRACE" && method !== "CONNECT";
     }
     function writeH1(client, request) {
-      const { method, path: path6, host, upgrade, blocking, reset } = request;
+      const { method, path: path7, host, upgrade, blocking, reset } = request;
       let { body, headers, contentLength } = request;
       const expectsPayload = method === "PUT" || method === "POST" || method === "PATCH" || method === "QUERY" || method === "PROPFIND" || method === "PROPPATCH";
       if (util2.isFormDataLike(body)) {
@@ -6460,7 +6460,7 @@ var require_client_h1 = __commonJS({
       if (blocking) {
         socket[kBlocking] = true;
       }
-      let header = `${method} ${path6} HTTP/1.1\r
+      let header = `${method} ${path7} HTTP/1.1\r
 `;
       if (typeof host === "string") {
         header += `host: ${host}\r
@@ -6986,7 +6986,7 @@ var require_client_h2 = __commonJS({
     }
     function writeH2(client, request) {
       const session = client[kHTTP2Session];
-      const { method, path: path6, host, upgrade, expectContinue, signal, headers: reqHeaders } = request;
+      const { method, path: path7, host, upgrade, expectContinue, signal, headers: reqHeaders } = request;
       let { body } = request;
       if (upgrade) {
         util2.errorRequest(client, request, new Error("Upgrade not supported for H2"));
@@ -7053,7 +7053,7 @@ var require_client_h2 = __commonJS({
         });
         return true;
       }
-      headers[HTTP2_HEADER_PATH] = path6;
+      headers[HTTP2_HEADER_PATH] = path7;
       headers[HTTP2_HEADER_SCHEME] = "https";
       const expectsPayload = method === "PUT" || method === "POST" || method === "PATCH";
       if (body && typeof body.read === "function") {
@@ -7406,9 +7406,9 @@ var require_redirect_handler = __commonJS({
           return this.handler.onHeaders(statusCode, headers, resume, statusText);
         }
         const { origin, pathname, search } = util2.parseURL(new URL(this.location, this.opts.origin && new URL(this.opts.path, this.opts.origin)));
-        const path6 = search ? `${pathname}${search}` : pathname;
+        const path7 = search ? `${pathname}${search}` : pathname;
         this.opts.headers = cleanRequestHeaders(this.opts.headers, statusCode === 303, this.opts.origin !== origin);
-        this.opts.path = path6;
+        this.opts.path = path7;
         this.opts.origin = origin;
         this.opts.maxRedirections = 0;
         this.opts.query = null;
@@ -8643,10 +8643,10 @@ var require_proxy_agent = __commonJS({
         };
         const {
           origin,
-          path: path6 = "/",
+          path: path7 = "/",
           headers = {}
         } = opts;
-        opts.path = origin + path6;
+        opts.path = origin + path7;
         if (!("host" in headers) && !("Host" in headers)) {
           const { host } = new URL2(origin);
           headers.host = host;
@@ -10618,20 +10618,20 @@ var require_mock_utils = __commonJS({
       }
       return true;
     }
-    function safeUrl(path6) {
-      if (typeof path6 !== "string") {
-        return path6;
+    function safeUrl(path7) {
+      if (typeof path7 !== "string") {
+        return path7;
       }
-      const pathSegments = path6.split("?");
+      const pathSegments = path7.split("?");
       if (pathSegments.length !== 2) {
-        return path6;
+        return path7;
       }
       const qp = new URLSearchParams(pathSegments.pop());
       qp.sort();
       return [...pathSegments, qp.toString()].join("?");
     }
-    function matchKey(mockDispatch2, { path: path6, method, body, headers }) {
-      const pathMatch = matchValue(mockDispatch2.path, path6);
+    function matchKey(mockDispatch2, { path: path7, method, body, headers }) {
+      const pathMatch = matchValue(mockDispatch2.path, path7);
       const methodMatch = matchValue(mockDispatch2.method, method);
       const bodyMatch = typeof mockDispatch2.body !== "undefined" ? matchValue(mockDispatch2.body, body) : true;
       const headersMatch = matchHeaders(mockDispatch2, headers);
@@ -10653,7 +10653,7 @@ var require_mock_utils = __commonJS({
     function getMockDispatch(mockDispatches, key) {
       const basePath = key.query ? buildURL(key.path, key.query) : key.path;
       const resolvedPath = typeof basePath === "string" ? safeUrl(basePath) : basePath;
-      let matchedMockDispatches = mockDispatches.filter(({ consumed }) => !consumed).filter(({ path: path6 }) => matchValue(safeUrl(path6), resolvedPath));
+      let matchedMockDispatches = mockDispatches.filter(({ consumed }) => !consumed).filter(({ path: path7 }) => matchValue(safeUrl(path7), resolvedPath));
       if (matchedMockDispatches.length === 0) {
         throw new MockNotMatchedError(`Mock dispatch not matched for path '${resolvedPath}'`);
       }
@@ -10691,9 +10691,9 @@ var require_mock_utils = __commonJS({
       }
     }
     function buildKey(opts) {
-      const { path: path6, method, body, headers, query } = opts;
+      const { path: path7, method, body, headers, query } = opts;
       return {
-        path: path6,
+        path: path7,
         method,
         body,
         headers,
@@ -11156,10 +11156,10 @@ var require_pending_interceptors_formatter = __commonJS({
       }
       format(pendingInterceptors) {
         const withPrettyHeaders = pendingInterceptors.map(
-          ({ method, path: path6, data: { statusCode }, persist, times, timesInvoked, origin }) => ({
+          ({ method, path: path7, data: { statusCode }, persist, times, timesInvoked, origin }) => ({
             Method: method,
             Origin: origin,
-            Path: path6,
+            Path: path7,
             "Status code": statusCode,
             Persistent: persist ? PERSISTENT : NOT_PERSISTENT,
             Invocations: timesInvoked,
@@ -16040,9 +16040,9 @@ var require_util6 = __commonJS({
         }
       }
     }
-    function validateCookiePath(path6) {
-      for (let i = 0; i < path6.length; ++i) {
-        const code = path6.charCodeAt(i);
+    function validateCookiePath(path7) {
+      for (let i = 0; i < path7.length; ++i) {
+        const code = path7.charCodeAt(i);
         if (code < 32 || // exclude CTLs (0-31)
         code > 126 || // exclude DEL and non-ascii
         code === 59) {
@@ -18884,11 +18884,11 @@ var require_undici = __commonJS({
           if (typeof opts.path !== "string") {
             throw new InvalidArgumentError("invalid opts.path");
           }
-          let path6 = opts.path;
+          let path7 = opts.path;
           if (!opts.path.startsWith("/")) {
-            path6 = `/${path6}`;
+            path7 = `/${path7}`;
           }
-          url = new URL(util2.parseOrigin(url).origin + path6);
+          url = new URL(util2.parseOrigin(url).origin + path7);
         } else {
           if (!opts) {
             opts = typeof url === "object" ? url : {};
@@ -22081,15 +22081,6 @@ var __awaiter3 = function(thisArg, _arguments, P, generator) {
 };
 var { chmod, copyFile, lstat, mkdir, open, readdir, rename, rm, rmdir, stat, symlink, unlink } = fs2.promises;
 var IS_WINDOWS = process.platform === "win32";
-function readlink(fsPath) {
-  return __awaiter3(this, void 0, void 0, function* () {
-    const result = yield fs2.promises.readlink(fsPath);
-    if (IS_WINDOWS && !result.endsWith("\\")) {
-      return `${result}\\`;
-    }
-    return result;
-  });
-}
 var READONLY = fs2.constants.O_RDONLY;
 function exists(fsPath) {
   return __awaiter3(this, void 0, void 0, function* () {
@@ -22212,32 +22203,6 @@ var __awaiter4 = function(thisArg, _arguments, P, generator) {
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
 };
-function cp(source_1, dest_1) {
-  return __awaiter4(this, arguments, void 0, function* (source, dest, options = {}) {
-    const { force, recursive, copySourceDirectory } = readCopyOptions(options);
-    const destStat = (yield exists(dest)) ? yield stat(dest) : null;
-    if (destStat && destStat.isFile() && !force) {
-      return;
-    }
-    const newDest = destStat && destStat.isDirectory() && copySourceDirectory ? path2.join(dest, path2.basename(source)) : dest;
-    if (!(yield exists(source))) {
-      throw new Error(`no such file or directory: ${source}`);
-    }
-    const sourceStat = yield stat(source);
-    if (sourceStat.isDirectory()) {
-      if (!recursive) {
-        throw new Error(`Failed to copy. ${source} is a directory, but tried to copy without recursive flag.`);
-      } else {
-        yield cpDirRecursive(source, newDest, 0, force);
-      }
-    } else {
-      if (path2.relative(source, newDest) === "") {
-        throw new Error(`'${newDest}' and '${source}' are the same file`);
-      }
-      yield copyFile2(source, newDest, force);
-    }
-  });
-}
 function rmRF(inputPath) {
   return __awaiter4(this, void 0, void 0, function* () {
     if (IS_WINDOWS) {
@@ -22325,51 +22290,6 @@ function findInPath(tool) {
       }
     }
     return matches;
-  });
-}
-function readCopyOptions(options) {
-  const force = options.force == null ? true : options.force;
-  const recursive = Boolean(options.recursive);
-  const copySourceDirectory = options.copySourceDirectory == null ? true : Boolean(options.copySourceDirectory);
-  return { force, recursive, copySourceDirectory };
-}
-function cpDirRecursive(sourceDir, destDir, currentDepth, force) {
-  return __awaiter4(this, void 0, void 0, function* () {
-    if (currentDepth >= 255)
-      return;
-    currentDepth++;
-    yield mkdirP(destDir);
-    const files = yield readdir(sourceDir);
-    for (const fileName of files) {
-      const srcFile = `${sourceDir}/${fileName}`;
-      const destFile = `${destDir}/${fileName}`;
-      const srcFileStat = yield lstat(srcFile);
-      if (srcFileStat.isDirectory()) {
-        yield cpDirRecursive(srcFile, destFile, currentDepth, force);
-      } else {
-        yield copyFile2(srcFile, destFile, force);
-      }
-    }
-    yield chmod(destDir, (yield stat(sourceDir)).mode);
-  });
-}
-function copyFile2(srcFile, destFile, force) {
-  return __awaiter4(this, void 0, void 0, function* () {
-    if ((yield lstat(srcFile)).isSymbolicLink()) {
-      try {
-        yield lstat(destFile);
-        yield unlink(destFile);
-      } catch (e) {
-        if (e.code === "EPERM") {
-          yield chmod(destFile, "0666");
-          yield unlink(destFile);
-        }
-      }
-      const symlinkFull = yield readlink(srcFile);
-      yield symlink(symlinkFull, destFile, IS_WINDOWS ? "junction" : null);
-    } else if (!(yield exists(destFile)) || force) {
-      yield copyFile(srcFile, destFile);
-    }
   });
 }
 
@@ -22914,7 +22834,6 @@ var fs3 = __toESM(require("fs"), 1);
 var semver = __toESM(require_semver2(), 1);
 
 // node_modules/@actions/tool-cache/lib/tool-cache.js
-var os6 = __toESM(require("os"), 1);
 var path5 = __toESM(require("path"), 1);
 var semver2 = __toESM(require_semver2(), 1);
 var stream = __toESM(require("stream"), 1);
@@ -23136,68 +23055,6 @@ function extractTar(file_1, dest_1) {
     return dest;
   });
 }
-function cacheDir(sourceDir, tool, version, arch3) {
-  return __awaiter8(this, void 0, void 0, function* () {
-    version = semver2.clean(version) || version;
-    arch3 = arch3 || os6.arch();
-    debug(`Caching tool ${tool} ${version} ${arch3}`);
-    debug(`source dir: ${sourceDir}`);
-    if (!fs3.statSync(sourceDir).isDirectory()) {
-      throw new Error("sourceDir is not a directory");
-    }
-    const destPath = yield _createToolPath(tool, version, arch3);
-    for (const itemName of fs3.readdirSync(sourceDir)) {
-      const s = path5.join(sourceDir, itemName);
-      yield cp(s, destPath, { recursive: true });
-    }
-    _completeToolPath(tool, version, arch3);
-    return destPath;
-  });
-}
-function find(toolName, versionSpec, arch3) {
-  if (!toolName) {
-    throw new Error("toolName parameter is required");
-  }
-  if (!versionSpec) {
-    throw new Error("versionSpec parameter is required");
-  }
-  arch3 = arch3 || os6.arch();
-  if (!isExplicitVersion(versionSpec)) {
-    const localVersions = findAllVersions(toolName, arch3);
-    const match = evaluateVersions(localVersions, versionSpec);
-    versionSpec = match;
-  }
-  let toolPath = "";
-  if (versionSpec) {
-    versionSpec = semver2.clean(versionSpec) || "";
-    const cachePath = path5.join(_getCacheDirectory(), toolName, versionSpec, arch3);
-    debug(`checking cache: ${cachePath}`);
-    if (fs3.existsSync(cachePath) && fs3.existsSync(`${cachePath}.complete`)) {
-      debug(`Found tool in cache ${toolName} ${versionSpec} ${arch3}`);
-      toolPath = cachePath;
-    } else {
-      debug("not found");
-    }
-  }
-  return toolPath;
-}
-function findAllVersions(toolName, arch3) {
-  const versions = [];
-  arch3 = arch3 || os6.arch();
-  const toolPath = path5.join(_getCacheDirectory(), toolName);
-  if (fs3.existsSync(toolPath)) {
-    const children = fs3.readdirSync(toolPath);
-    for (const child2 of children) {
-      if (isExplicitVersion(child2)) {
-        const fullPath = path5.join(toolPath, child2, arch3 || "");
-        if (fs3.existsSync(fullPath) && fs3.existsSync(`${fullPath}.complete`)) {
-          versions.push(child2);
-        }
-      }
-    }
-  }
-  return versions;
-}
 function _createExtractFolder(dest) {
   return __awaiter8(this, void 0, void 0, function* () {
     if (!dest) {
@@ -23206,59 +23063,6 @@ function _createExtractFolder(dest) {
     yield mkdirP(dest);
     return dest;
   });
-}
-function _createToolPath(tool, version, arch3) {
-  return __awaiter8(this, void 0, void 0, function* () {
-    const folderPath = path5.join(_getCacheDirectory(), tool, semver2.clean(version) || version, arch3 || "");
-    debug(`destination ${folderPath}`);
-    const markerPath = `${folderPath}.complete`;
-    yield rmRF(folderPath);
-    yield rmRF(markerPath);
-    yield mkdirP(folderPath);
-    return folderPath;
-  });
-}
-function _completeToolPath(tool, version, arch3) {
-  const folderPath = path5.join(_getCacheDirectory(), tool, semver2.clean(version) || version, arch3 || "");
-  const markerPath = `${folderPath}.complete`;
-  fs3.writeFileSync(markerPath, "");
-  debug("finished caching tool");
-}
-function isExplicitVersion(versionSpec) {
-  const c = semver2.clean(versionSpec) || "";
-  debug(`isExplicit: ${c}`);
-  const valid2 = semver2.valid(c) != null;
-  debug(`explicit? ${valid2}`);
-  return valid2;
-}
-function evaluateVersions(versions, versionSpec) {
-  let version = "";
-  debug(`evaluating ${versions.length} versions`);
-  versions = versions.sort((a, b) => {
-    if (semver2.gt(a, b)) {
-      return 1;
-    }
-    return -1;
-  });
-  for (let i = versions.length - 1; i >= 0; i--) {
-    const potential = versions[i];
-    const satisfied = semver2.satisfies(potential, versionSpec);
-    if (satisfied) {
-      version = potential;
-      break;
-    }
-  }
-  if (version) {
-    debug(`matched: ${version}`);
-  } else {
-    debug("match not found");
-  }
-  return version;
-}
-function _getCacheDirectory() {
-  const cacheDirectory = process.env["RUNNER_TOOL_CACHE"] || "";
-  (0, import_assert2.ok)(cacheDirectory, "Expected RUNNER_TOOL_CACHE to be defined");
-  return cacheDirectory;
 }
 function _getTempDirectory() {
   const tempDirectory = process.env["RUNNER_TEMP"] || "";
@@ -23271,19 +23075,19 @@ function _getGlobal(key, defaultValue) {
 }
 
 // src/main.js
+var fs4 = __toESM(require("fs"));
+var path6 = __toESM(require("path"));
 async function run() {
   try {
     const version = getInput("version");
-    let toolPath = find("my-cli", version);
-    if (!toolPath) {
-      const url = `https://github.com/cli/cli/releases/download/v${version}/gh_${version}_linux_amd64.tar.gz`;
-      const downloadPath = await downloadTool(url);
-      const extractedPath = await extractTar(downloadPath);
-      toolPath = await cacheDir(extractedPath, "my-cli", version);
-    }
-    addPath(toolPath);
+    const url = `https://github.com/cli/cli/releases/download/v${version}/gh_${version}_linux_amd64.tar.gz`;
+    const tarball = await downloadTool(url);
+    const extracted = await extractTar(tarball);
+    const binDir = path6.join(extracted, `gh_${version}_linux_amd64`);
+    fs4.copyFileSync(path6.join(binDir, "gh"), path6.join(binDir, "my-cli"));
+    addPath(binDir);
   } catch (error2) {
-    setFailed(error2 instanceof Error ? error2.message : String(error2));
+    setFailed(error2.message);
   }
 }
 run();

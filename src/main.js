@@ -1,27 +1,25 @@
 import * as core from '@actions/core';
 import * as tc from '@actions/tool-cache';
+import * as fs from 'fs';
+import * as path from 'path';
 
 async function run() {
   try {
     const version = core.getInput('version');
+    const url = `https://github.com/cli/cli/releases/download/v${version}/gh_${version}_linux_amd64.tar.gz`;
     
-    // 1. Check cache first - for faster execution
-    let toolPath = tc.find('my-cli', version);
+    const tarball = await tc.downloadTool(url);
+    const extracted = await tc.extractTar(tarball);
     
-    if (!toolPath) {
-      // 2. Download for this OS
-      const url = `https://github.com/cli/cli/releases/download/v${version}/gh_${version}_linux_amd64.tar.gz`;
-      const downloadPath = await tc.downloadTool(url);
-      const extractedPath = await tc.extractTar(downloadPath);
-      toolPath = await tc.cacheDir(extractedPath, 'my-cli', version);
-    }
+    // tarball contains folder gh_2.50.0_linux_amd64/
+    const binDir = path.join(extracted, `gh_${version}_linux_amd64`);
+    
+    // make my-cli command work
+    fs.copyFileSync(path.join(binDir, 'gh'), path.join(binDir, 'my-cli'));
 
-    // 3. Add to PATH so next steps can use it
-    core.addPath(toolPath);
-    
+    core.addPath(binDir);
   } catch (error) {
-    core.setFailed(error instanceof Error ? error.message : String(error));
+    core.setFailed(error.message);
   }
 }
-
 run();
