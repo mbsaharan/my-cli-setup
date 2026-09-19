@@ -1,0 +1,25 @@
+const core = require('@actions/core');
+const tc = require('@actions/tool-cache');
+
+async function run() {
+  try {
+    const version = core.getInput('version');
+    
+    // 1. Check cache first - for faster execution
+    let toolPath = tc.find('my-cli', version);
+    
+    if (!toolPath) {
+      // 2. Download for this OS
+      const url = `https://example.com/my-cli/${version}/my-cli-linux.tar.gz`;
+      const downloadPath = await tc.downloadTool(url);
+      toolPath = await tc.cacheDir(downloadPath, 'my-cli', version);
+    }
+
+    // 3. Add to PATH so next steps can use it
+    core.addPath(toolPath);
+    
+  } catch (error) {
+    core.setFailed(error.message);
+  }
+}
+run();
