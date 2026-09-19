@@ -1,0 +1,10 @@
+name: 'Setup My CLI'
+description: 'Installs My CLI tool'
+inputs:
+  version:
+    description: 'Version of My CLI to install, e.g. 2.50.0'
+    required: true
+    default: '2.50.0'
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
