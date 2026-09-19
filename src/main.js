@@ -1,5 +1,5 @@
-const core = require('@actions/core');
-const tc = require('@actions/tool-cache');
+import * as core from '@actions/core';
+import * as tc from '@actions/tool-cache';
 
 async function run() {
   try {
@@ -12,14 +12,16 @@ async function run() {
       // 2. Download for this OS
       const url = `https://example.com/my-cli/${version}/my-cli-linux.tar.gz`;
       const downloadPath = await tc.downloadTool(url);
-      toolPath = await tc.cacheDir(downloadPath, 'my-cli', version);
+      const extractedPath = await tc.extractTar(downloadPath);
+      toolPath = await tc.cacheDir(extractedPath, 'my-cli', version);
     }
 
     // 3. Add to PATH so next steps can use it
     core.addPath(toolPath);
     
   } catch (error) {
-    core.setFailed(error.message);
+    core.setFailed(error instanceof Error ? error.message : String(error));
   }
 }
+
 run();
